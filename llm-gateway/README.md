@@ -48,7 +48,7 @@ MCP server  (mcp_server/server.py: ask_model, list_models, privacy guard)
 LiteLLM proxy  http://localhost:4000   (litellm/config.yaml)
     |  groups: fast, code, long-context  (retry, cooldown, fallback)
     v
-Gemini | Groq | Cerebras | OpenRouter ":free" models
+Gemini | Groq | NVIDIA NIM | OpenRouter ":free" models
 ```
 
 Claude Code starts the MCP server itself when it needs it. The proxy is a separate process that you start with a script and leave running. A diagram is in `docs/architecture.excalidraw`; open it at https://excalidraw.com or with the Excalidraw VS Code extension.
@@ -103,7 +103,6 @@ Each provider's key is created on its own site. You only need the providers you 
 
 - Gemini (Google AI Studio): https://aistudio.google.com/apikey (redirects to Google sign-in, as expected)
 - Groq: https://console.groq.com/keys
-- Cerebras: https://cloud.cerebras.ai/ (sign in, then create a key in the dashboard)
 - OpenRouter: https://openrouter.ai/settings/keys
 - DeepSeek: https://platform.deepseek.com/api_keys (requests fail with "Insufficient Balance" until the account has credit)
 - NVIDIA NIM: https://build.nvidia.com (open a model, then "Get API Key"; keys start with `nvapi-`). On 2026-11-16, `deepseek-ai/deepseek-v4.1-flash`, `z-ai/glm-5.3-flash` and `openai/gpt-oss-20b` timed out at 90 seconds on the free tier, so they are not configured.
@@ -124,7 +123,6 @@ Settings live in `.env` (ignored by git). `scripts\start-gateway.ps1` and `scrip
 | `LITELLM_MASTER_KEY` | proxy, scripts | Required. Key clients must send to the proxy. The start script refuses to run without it. |
 | `GEMINI_API_KEY` | proxy | Google AI Studio key. |
 | `GROQ_API_KEY` | proxy | Groq key. |
-| `CEREBRAS_API_KEY` | proxy | Cerebras key. |
 | `OPENROUTER_API_KEY` | proxy | OpenRouter key. |
 | `DEEPSEEK_API_KEY` | proxy | DeepSeek key. |
 | `MOONSHOT_API_KEY` | proxy | Kimi (Moonshot AI, international platform) key. |
@@ -225,10 +223,8 @@ Defined in `litellm/config.yaml`. Routing within a group is `simple-shuffle` (ra
 | Group | Provider | Model ID | Free-tier note (checked 2026-11-13) |
 | --- | --- | --- | --- |
 | `fast` | Gemini | `gemini-3.5-flash-lite` | Listed as free of charge on the AI Studio pricing page; rate limits not obtained. |
-| `fast` | Cerebras | `gpt-oss-120b` | Free tier is a $5 trial credit that expires after 30 days; paid afterwards. |
 | `fast` | OpenRouter | `google/gemma-4-31b-it:free` | ID confirmed in the live model listing. |
 | `code` | Groq | `openai/gpt-oss-120b` | Model ID exists; free-plan coverage unconfirmed. |
-| `code` | Cerebras | `qwen-3.8-27b` | $5 trial credit, expires after 30 days. |
 | `code` | OpenRouter | `cohere/north-mini-code:free` | ID confirmed in the live model listing. |
 | `code` | Gemini | `gemini-3.6-flash` | Listed as free of charge on the AI Studio pricing page; rate limits not obtained. |
 | `fast` | NVIDIA NIM | `mistralai/mistral-large-4-1t-a52b` | Answered in about 1s on 2026-11-16. Free NVIDIA account credits and per-model rate limits. |
@@ -341,7 +337,7 @@ Verified on macOS on 2026-11-16 with real keys: `fast`, `code` and `long-context
 
 Not verified: cooldown behaviour under real rate limits, and a completion from the DeepSeek and Kimi groups.
 
-Other limits: free-tier rate limits and availability are unknown or can change; model IDs were checked on 2026-11-13 and may go stale; the Cerebras and Groq entries may not be free for you.
+Other limits: free-tier rate limits and availability are unknown or can change; model IDs were checked on 2026-11-13 and may go stale; the Groq entries may not be free for you.
 
 First-run checklist:
 
