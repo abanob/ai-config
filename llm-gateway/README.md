@@ -105,6 +105,8 @@ Each provider's key is created on its own site. You only need the providers you 
 - Groq: https://console.groq.com/keys
 - Cerebras: https://cloud.cerebras.ai/ (sign in, then create a key in the dashboard)
 - OpenRouter: https://openrouter.ai/settings/keys
+- DeepSeek: https://platform.deepseek.com/api_keys (requests fail with "Insufficient Balance" until the account has credit)
+- Kimi (Moonshot AI): https://platform.moonshot.ai/console/api-keys (international platform; keys from the China platform are rejected by `api.moonshot.ai`)
 
 Also choose a master key: any long random string. It is the password for your own proxy, not a provider key. You can generate one with:
 
@@ -123,6 +125,8 @@ Settings live in `.env` (ignored by git). `scripts\start-gateway.ps1` and `scrip
 | `GROQ_API_KEY` | proxy | Groq key. |
 | `CEREBRAS_API_KEY` | proxy | Cerebras key. |
 | `OPENROUTER_API_KEY` | proxy | OpenRouter key. |
+| `DEEPSEEK_API_KEY` | proxy | DeepSeek key. |
+| `MOONSHOT_API_KEY` | proxy | Kimi (Moonshot AI, international platform) key. |
 | `LLM_GATEWAY_URL` | MCP server, check script | Proxy address. Defaults to `http://localhost:4000`. |
 | `LLM_GATEWAY_KEY` | MCP server, check script | Key the MCP server sends. Falls back to `LITELLM_MASTER_KEY` if empty. Set it to the master key. |
 | `PRIVATE_SAFE_GROUPS` | MCP server | Comma-separated groups that may receive `private=True` requests. Empty by default. See "Privacy guard". |
@@ -149,6 +153,32 @@ Run the unit tests (8 tests; they use fake HTTP responses and need no network or
 .\.venv\Scripts\python -m pytest -q
 ```
 
+### macOS
+
+The PowerShell scripts are Windows only. On macOS, start the proxy from the `llm-gateway` folder with:
+
+```sh
+set -a && . ./.env && set +a && .venv/bin/litellm --config litellm/config.yaml --host 127.0.0.1 --port 4000
+```
+
+To start it at login and restart it after a crash, create `~/Library/LaunchAgents/local.llm-gateway.plist` with `RunAtLoad` and `KeepAlive` set to true, and `ProgramArguments` set to `/bin/zsh`, `-c` and the command above prefixed with `cd "$HOME/.claude/ai-config/llm-gateway" &&` (write the absolute path, launchd does not expand `$HOME`). Point `StandardOutPath` and `StandardErrorPath` at `proxy.log` in the same folder; `*.log` is ignored by git. Then:
+
+```sh
+launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/local.llm-gateway.plist
+launchctl kickstart -k gui/$(id -u)/local.llm-gateway
+launchctl bootout gui/$(id -u)/local.llm-gateway
+```
+
+The first command loads and starts the agent, the second restarts it after a change to `.env` or `litellm/config.yaml`, the third stops and unloads it.
+
+On an Intel Mac, `install.sh llm-gateway` can fail building `cryptography`, which has no prebuilt wheel for that platform and needs Rust 1.83 or newer. Install a recent toolchain next to the default one and use it for the install only: `rustup toolchain install 1.91.0 --profile minimal`, then `RUSTUP_TOOLCHAIN=1.91.0 .venv/bin/python -m pip install "litellm[proxy]" "mcp>=2" httpx pytest`.
+
+To register the MCP server on macOS, from the `llm-gateway` folder:
+
+```sh
+. ./.env && claude mcp add llm-gateway --scope user -e LLM_GATEWAY_URL=http://localhost:4000 -e LLM_GATEWAY_KEY="$LITELLM_MASTER_KEY" -e PRIVATE_SAFE_GROUPS= -- "$PWD/.venv/bin/python" "$PWD/mcp_server/server.py"
+```
+
 ## Registering with Claude Code
 
 Run this yourself, once, in PowerShell. Replace `<master key>` with your `LITELLM_MASTER_KEY` value. The paths assume the documented clone location `~/.claude/ai-config`; PowerShell expands `$HOME` inside the double quotes, so Claude Code stores absolute paths.
@@ -170,7 +200,7 @@ The proxy must be running. Claude Code gets two tools:
 
 - `ask_model(prompt, group="fast", system=None, max_tokens=None, private=False)`
   - `prompt`: the text to send.
-  - `group`: `fast`, `code` or `long-context`.
+  - `group`: `fast`, `code`, `long-context`, `deepseek`, `deepseek-pro`, `kimi` or `kimi-pro`.
   - `system`: optional system prompt.
   - `max_tokens`: optional cap on the reply length.
   - `private`: if true, the request is refused unless the group is in `PRIVATE_SAFE_GROUPS`.
@@ -204,19 +234,36 @@ Defined in `litellm/config.yaml`. Routing within a group is `simple-shuffle` (ra
 | `long-context` | OpenRouter | `thinkingmachines/inkling-2-small:free` | ID confirmed in the live model listing. |
 | `long-context` | OpenRouter | `nvidia/nemotron-3-ultra-550b-a55b:free` | ID confirmed in the live model listing. |
 | `long-context` | OpenRouter | `baidu/ernie-5.5-flash-preview:free` | ID confirmed in the live model listing. |
+| `deepseek` | DeepSeek | `deepseek-flash` (DeepSeek-V4.1-Flash, 1M context) | ID confirmed in the DeepSeek model listing on 2026-11-16. Needs account credit. |
+| `deepseek-pro` | DeepSeek | `deepseek-v4-pro` (1M context) | As above. |
+| `kimi` | Moonshot AI | `kimi-k2.7-code` (262k context) | ID confirmed in the Moonshot model listing on 2026-11-16. Uses `api_base: https://api.moonshot.ai/v1`. Needs account credit. |
+| `kimi-pro` | Moonshot AI | `kimi-k3.1-pro` | As above. |
 
 The three OpenRouter models in `long-context` were listed with context windows of about one million tokens on 2026-11-13; the Gemini window was not checked, so confirm each model's limit before sending very large inputs. OpenRouter `:free` models are themselves rate limited and may change or disappear.
+
+On 2026-11-16, both the DeepSeek and the Moonshot accounts used for testing answered with an insufficient-balance error, so these groups only work once the account has credit. Check each provider's billing before relying on them; usage beyond any free credit may be charged.
 
 Not included:
 
 - GitHub Models: retired on 2026-07-30 according to GitHub's documentation.
 - Mistral: no current free API tier could be confirmed.
-- DeepSeek and Kimi: no free variants on OpenRouter at the time of checking, and their own APIs are paid. You can add them as paid deployments, see "Changing or adding models and providers".
 
 ## How fallback works
 
 - Within a group: if a deployment fails or is rate limited, LiteLLM retries (`num_retries: 2`) and moves to another deployment of the same group. A failing deployment is put in cooldown for 60 seconds (`cooldown_time: 60`, `allowed_fails: 1`).
-- Across groups: `fast` falls back to `code`, and `code` falls back to `fast`. `long-context` has no cross-group fallback.
+- Across groups, in order:
+
+  | Group | Falls back to |
+  | --- | --- |
+  | `fast` | `code`, `deepseek`, `kimi` |
+  | `code` | `fast`, `kimi`, `deepseek` |
+  | `long-context` | `deepseek`, `kimi` |
+  | `deepseek` | `kimi` |
+  | `kimi` | `deepseek` |
+  | `deepseek-pro` | `kimi-pro` |
+  | `kimi-pro` | `deepseek-pro` |
+
+  When a DeepSeek or Kimi account has no credit, its group fails at call time and the router moves on, which only adds latency before the final error.
 - Per-request timeout at the proxy is 60 seconds; the MCP server waits up to 120 seconds.
 - A deployment whose provider key is missing does not stop the proxy from starting. It fails at call time and the router moves on. With no keys at all, a call returns a "Missing credentials" error.
 
@@ -226,7 +273,7 @@ The `[answered by: ...]` line on every reply shows which deployment answered, in
 
 Free tiers often allow the provider to train on your prompts. To keep private or work code away from them, `ask_model(private=True)` is refused unless the requested group is listed in `PRIVATE_SAFE_GROUPS`. The variable is empty by default, so every private request is refused. A refused call sends nothing to the proxy.
 
-Warning: do not put `fast` or `code` in `PRIVATE_SAFE_GROUPS`. They contain free-tier deployments and fall back into each other, so a "private" request could still reach a free provider.
+Warning: do not put `fast`, `code`, `long-context`, `deepseek`, `deepseek-pro`, `kimi` or `kimi-pro` in `PRIVATE_SAFE_GROUPS`. They contain free-tier deployments or fall back into groups that do, so a "private" request could still reach a free provider.
 
 The safe way is a dedicated group that contains only providers whose terms exclude training on prompts (typically paid tiers), with no fallback into other groups. Example for `litellm/config.yaml`; the model and key name are placeholders to replace with a provider you have verified:
 
@@ -297,7 +344,9 @@ Direct calls bypass the privacy guard, which exists only in the MCP server.
 
 Verified: the 8 unit tests pass; `start-gateway.ps1` refuses to run without `LITELLM_MASTER_KEY` and, with it set, starts the proxy on 127.0.0.1:4000 with no provider keys; the liveness endpoint and `/v1/models` respond; `check-gateway.ps1` lists the three groups when the proxy is up and exits with an error when it is down; a private request is refused by the guard; a call with no provider keys returns a "Missing credentials" error instead of crashing; the MCP server answers `initialize` over stdio.
 
-Not verified, because no API keys were available: any real completion, real fallback and cooldown behaviour, and Claude Code actually loading the server. The registration command has not been run.
+Verified on macOS on 2026-11-16 with real keys: `fast`, `code` and `long-context` each return a completion; `deepseek`, `deepseek-pro`, `kimi` and `kimi-pro` fail with an insufficient-balance error on accounts without credit, and the router falls back between them as configured; the MCP server registered with `--scope user` reports as connected in `claude mcp get llm-gateway`; the proxy runs under a launchd agent.
+
+Not verified: cooldown behaviour under real rate limits, and a completion from the DeepSeek and Kimi groups.
 
 Other limits: free-tier rate limits and availability are unknown or can change; model IDs were checked on 2026-11-13 and may go stale; the Cerebras and Groq entries may not be free for you.
 
