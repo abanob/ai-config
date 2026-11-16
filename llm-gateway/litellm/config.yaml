@@ -50,6 +50,25 @@ model_list:
       model: openrouter/baidu/ernie-5.5-flash-preview:free
       api_key: os.environ/OPENROUTER_API_KEY
 
+  - model_name: deepseek
+    litellm_params:
+      model: deepseek/deepseek-flash
+      api_key: os.environ/DEEPSEEK_API_KEY
+  - model_name: deepseek-pro
+    litellm_params:
+      model: deepseek/deepseek-v4-pro
+      api_key: os.environ/DEEPSEEK_API_KEY
+  - model_name: kimi
+    litellm_params:
+      model: moonshot/kimi-k2.7-code
+      api_base: https://api.moonshot.ai/v1
+      api_key: os.environ/MOONSHOT_API_KEY
+  - model_name: kimi-pro
+    litellm_params:
+      model: moonshot/kimi-k3.1-pro
+      api_base: https://api.moonshot.ai/v1
+      api_key: os.environ/MOONSHOT_API_KEY
+
 litellm_settings:
   num_retries: 2
   request_timeout: 60
@@ -60,8 +79,13 @@ router_settings:
   allowed_fails: 1
   cooldown_time: 60
   fallbacks:
-    - fast: ["code"]
-    - code: ["fast"]
+    - fast: ["code", "deepseek", "kimi"]
+    - code: ["fast", "kimi", "deepseek"]
+    - long-context: ["deepseek", "kimi"]
+    - deepseek: ["kimi"]
+    - kimi: ["deepseek"]
+    - deepseek-pro: ["kimi-pro"]
+    - kimi-pro: ["deepseek-pro"]
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
