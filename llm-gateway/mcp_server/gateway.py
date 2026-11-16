@@ -37,9 +37,9 @@ def build_payload(prompt, group, system=None, max_tokens=None):
     return payload
 
 
-def format_answer(data):
+def format_answer(data, model=None):
     text = data["choices"][0]["message"]["content"] or ""
-    return f"{text}\n\n[answered by: {data.get('model', 'unknown')}]"
+    return f"{text}\n\n[answered by: {model or data.get('model', 'unknown')}]"
 
 
 def _headers(key):
@@ -69,7 +69,7 @@ def ask(prompt, group="fast", system=None, max_tokens=None, private=False, clien
             timeout=120,
         )
         resp.raise_for_status()
-        return format_answer(resp.json())
+        return format_answer(resp.json(), resp.headers.get("x-litellm-model-name"))
     except Exception as exc:
         return _error(exc, cfg["url"])
 

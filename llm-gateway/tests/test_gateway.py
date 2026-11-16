@@ -5,9 +5,10 @@ import gateway
 
 
 class FakeResponse:
-    def __init__(self, data, status=200):
+    def __init__(self, data, status=200, headers=None):
         self._data = data
         self.status_code = status
+        self.headers = headers or {}
         self.text = str(data)
 
     def raise_for_status(self):
@@ -104,6 +105,18 @@ def test_ask_sends_auth_and_reports_model(monkeypatch):
     assert url == "http://localhost:4000/v1/chat/completions"
     assert kwargs["headers"] == {"Authorization": "Bearer k"}
     assert "groq/x" in result
+
+
+def test_ask_reports_deployment_from_header_not_group(monkeypatch):
+    # Arrange
+    data = {"model": "fast", "choices": [{"message": {"content": "hi"}}]}
+    client = FakeClient(FakeResponse(data, headers={"x-litellm-model-name": "gemini/gemini-3.5-flash-lite"}))
+
+    # Act
+    result = gateway.ask("p", client=client)
+
+    # Assert
+    assert result == "hi\n\n[answered by: gemini/gemini-3.5-flash-lite]"
 
 
 def test_proxy_down_message():

@@ -147,7 +147,7 @@ In another window, check it. This calls the liveness endpoint and lists the mode
 .\scripts\check-gateway.ps1
 ```
 
-Run the unit tests (8 tests; they use fake HTTP responses and need no network or keys):
+Run the unit tests (9 tests; they use fake HTTP responses and need no network or keys):
 
 ```powershell
 .\.venv\Scripts\python -m pytest -q
@@ -204,7 +204,7 @@ The proxy must be running. Claude Code gets two tools:
   - `system`: optional system prompt.
   - `max_tokens`: optional cap on the reply length.
   - `private`: if true, the request is refused unless the group is in `PRIVATE_SAFE_GROUPS`.
-  - The reply ends with `[answered by: <model>]`, naming the deployment that actually answered.
+  - The reply ends with `[answered by: <model>]`, naming the deployment that actually answered (from the proxy's `x-litellm-model-name` header, for example `gemini/gemini-3.5-flash-lite`).
 - `list_models()`: returns the model group names the proxy exposes, one per line.
 
 Example prompts to give Claude Code:
@@ -330,7 +330,7 @@ Direct calls bypass the privacy guard, which exists only in the MCP server.
 
 ## Status and limits
 
-Verified: the 8 unit tests pass; `start-gateway.ps1` refuses to run without `LITELLM_MASTER_KEY` and, with it set, starts the proxy on 127.0.0.1:4000 with no provider keys; the liveness endpoint and `/v1/models` respond; `check-gateway.ps1` lists the three groups when the proxy is up and exits with an error when it is down; a private request is refused by the guard; a call with no provider keys returns a "Missing credentials" error instead of crashing; the MCP server answers `initialize` over stdio.
+Verified: the 9 unit tests pass; `start-gateway.ps1` refuses to run without `LITELLM_MASTER_KEY` and, with it set, starts the proxy on 127.0.0.1:4000 with no provider keys; the liveness endpoint and `/v1/models` respond; `check-gateway.ps1` lists the three groups when the proxy is up and exits with an error when it is down; a private request is refused by the guard; a call with no provider keys returns a "Missing credentials" error instead of crashing; the MCP server answers `initialize` over stdio.
 
 Verified on macOS on 2026-11-16 with real keys: `fast`, `code` and `long-context` each return a completion; `deepseek`, `deepseek-pro`, `kimi` and `kimi-pro` fail with an insufficient-balance error on accounts without credit, and the router falls back between them as configured; the MCP server registered with `--scope user` reports as connected in `claude mcp get llm-gateway`; the proxy runs under a launchd agent.
 
