@@ -225,7 +225,6 @@ Defined in `litellm/config.yaml`. Routing within a group is `simple-shuffle` (ra
 | Group | Provider | Model ID | Free-tier note (checked 2026-11-13) |
 | --- | --- | --- | --- |
 | `fast` | Gemini | `gemini-3.5-flash-lite` | Listed as free of charge on the AI Studio pricing page; rate limits not obtained. |
-| `fast` | Groq | `llama-3.1-8b-instant` | Model ID exists; whether the free plan covers it is unconfirmed. Check your Groq account. |
 | `fast` | Cerebras | `gpt-oss-120b` | Free tier is a $5 trial credit that expires after 30 days; paid afterwards. |
 | `fast` | OpenRouter | `google/gemma-4-31b-it:free` | ID confirmed in the live model listing. |
 | `code` | Groq | `openai/gpt-oss-120b` | Model ID exists; free-plan coverage unconfirmed. |

@@ -5,10 +5,6 @@ model_list:
       api_key: os.environ/GEMINI_API_KEY
   - model_name: fast
     litellm_params:
-      model: groq/llama-3.1-8b-instant
-      api_key: os.environ/GROQ_API_KEY
-  - model_name: fast
-    litellm_params:
       model: cerebras/gpt-oss-120b
       api_key: os.environ/CEREBRAS_API_KEY
   - model_name: fast
