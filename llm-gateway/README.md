@@ -106,6 +106,7 @@ Each provider's key is created on its own site. You only need the providers you 
 - Cerebras: https://cloud.cerebras.ai/ (sign in, then create a key in the dashboard)
 - OpenRouter: https://openrouter.ai/settings/keys
 - DeepSeek: https://platform.deepseek.com/api_keys (requests fail with "Insufficient Balance" until the account has credit)
+- NVIDIA NIM: https://build.nvidia.com (open a model, then "Get API Key"; keys start with `nvapi-`). On 2026-11-16, `deepseek-ai/deepseek-v4.1-flash`, `z-ai/glm-5.3-flash` and `openai/gpt-oss-20b` timed out at 90 seconds on the free tier, so they are not configured.
 - Kimi (Moonshot AI): https://platform.moonshot.ai/console/api-keys (international platform; keys from the China platform are rejected by `api.moonshot.ai`)
 
 Also choose a master key: any long random string. It is the password for your own proxy, not a provider key. You can generate one with:
@@ -127,6 +128,7 @@ Settings live in `.env` (ignored by git). `scripts\start-gateway.ps1` and `scrip
 | `OPENROUTER_API_KEY` | proxy | OpenRouter key. |
 | `DEEPSEEK_API_KEY` | proxy | DeepSeek key. |
 | `MOONSHOT_API_KEY` | proxy | Kimi (Moonshot AI, international platform) key. |
+| `NVIDIA_NIM_API_KEY` | proxy | NVIDIA NIM key. |
 | `LLM_GATEWAY_URL` | MCP server, check script | Proxy address. Defaults to `http://localhost:4000`. |
 | `LLM_GATEWAY_KEY` | MCP server, check script | Key the MCP server sends. Falls back to `LITELLM_MASTER_KEY` if empty. Set it to the master key. |
 | `PRIVATE_SAFE_GROUPS` | MCP server | Comma-separated groups that may receive `private=True` requests. Empty by default. See "Privacy guard". |
@@ -200,7 +202,7 @@ The proxy must be running. Claude Code gets two tools:
 
 - `ask_model(prompt, group="fast", system=None, max_tokens=None, private=False)`
   - `prompt`: the text to send.
-  - `group`: `fast`, `code`, `long-context`, `deepseek`, `deepseek-pro`, `kimi` or `kimi-pro`.
+  - `group`: `fast`, `code`, `long-context`, `deepseek`, `deepseek-pro`, `kimi`, `kimi-pro` or `mistral`.
   - `system`: optional system prompt.
   - `max_tokens`: optional cap on the reply length.
   - `private`: if true, the request is refused unless the group is in `PRIVATE_SAFE_GROUPS`.
@@ -230,6 +232,10 @@ Defined in `litellm/config.yaml`. Routing within a group is `simple-shuffle` (ra
 | `code` | Cerebras | `qwen-3.8-27b` | $5 trial credit, expires after 30 days. |
 | `code` | OpenRouter | `cohere/north-mini-code:free` | ID confirmed in the live model listing. |
 | `code` | Gemini | `gemini-3.6-flash` | Listed as free of charge on the AI Studio pricing page; rate limits not obtained. |
+| `fast` | NVIDIA NIM | `mistralai/mistral-large-4-1t-a52b` | Answered in about 1s on 2026-11-16. Free NVIDIA account credits and per-model rate limits. |
+| `fast` | NVIDIA NIM | `nvidia/nemotron-3.5-lightning-30b-a3b` | As above. |
+| `code` | NVIDIA NIM | `mistralai/mistral-large-4-1t-a52b` | As above. |
+| `mistral` | NVIDIA NIM | `mistralai/mistral-large-4-1t-a52b` | Mistral Large 4 on its own, used only when named. |
 | `long-context` | Gemini | `gemini-3.6-flash` | As above. |
 | `long-context` | OpenRouter | `thinkingmachines/inkling-2-small:free` | ID confirmed in the live model listing. |
 | `long-context` | OpenRouter | `nvidia/nemotron-3-ultra-550b-a55b:free` | ID confirmed in the live model listing. |

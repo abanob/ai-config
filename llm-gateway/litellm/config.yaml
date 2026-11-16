@@ -69,6 +69,23 @@ model_list:
       api_base: https://api.moonshot.ai/v1
       api_key: os.environ/MOONSHOT_API_KEY
 
+  - model_name: fast
+    litellm_params:
+      model: nvidia_nim/mistralai/mistral-large-4-1t-a52b
+      api_key: os.environ/NVIDIA_NIM_API_KEY
+  - model_name: fast
+    litellm_params:
+      model: nvidia_nim/nvidia/nemotron-3.5-lightning-30b-a3b
+      api_key: os.environ/NVIDIA_NIM_API_KEY
+  - model_name: code
+    litellm_params:
+      model: nvidia_nim/mistralai/mistral-large-4-1t-a52b
+      api_key: os.environ/NVIDIA_NIM_API_KEY
+  - model_name: mistral
+    litellm_params:
+      model: nvidia_nim/mistralai/mistral-large-4-1t-a52b
+      api_key: os.environ/NVIDIA_NIM_API_KEY
+
 litellm_settings:
   num_retries: 2
   request_timeout: 60
