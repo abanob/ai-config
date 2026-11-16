@@ -79,13 +79,8 @@ router_settings:
   allowed_fails: 1
   cooldown_time: 60
   fallbacks:
-    - fast: ["code", "deepseek", "kimi"]
-    - code: ["fast", "kimi", "deepseek"]
-    - long-context: ["deepseek", "kimi"]
-    - deepseek: ["kimi"]
-    - kimi: ["deepseek"]
-    - deepseek-pro: ["kimi-pro"]
-    - kimi-pro: ["deepseek-pro"]
+    - fast: ["code"]
+    - code: ["fast"]
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

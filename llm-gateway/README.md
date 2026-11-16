@@ -251,19 +251,7 @@ Not included:
 ## How fallback works
 
 - Within a group: if a deployment fails or is rate limited, LiteLLM retries (`num_retries: 2`) and moves to another deployment of the same group. A failing deployment is put in cooldown for 60 seconds (`cooldown_time: 60`, `allowed_fails: 1`).
-- Across groups, in order:
-
-  | Group | Falls back to |
-  | --- | --- |
-  | `fast` | `code`, `deepseek`, `kimi` |
-  | `code` | `fast`, `kimi`, `deepseek` |
-  | `long-context` | `deepseek`, `kimi` |
-  | `deepseek` | `kimi` |
-  | `kimi` | `deepseek` |
-  | `deepseek-pro` | `kimi-pro` |
-  | `kimi-pro` | `deepseek-pro` |
-
-  When a DeepSeek or Kimi account has no credit, its group fails at call time and the router moves on, which only adds latency before the final error.
+- Across groups: `fast` falls back to `code`, and `code` falls back to `fast`. `long-context`, `deepseek`, `deepseek-pro`, `kimi` and `kimi-pro` have no cross-group fallback, and no group falls back to the DeepSeek or Kimi groups; they are used only when named.
 - Per-request timeout at the proxy is 60 seconds; the MCP server waits up to 120 seconds.
 - A deployment whose provider key is missing does not stop the proxy from starting. It fails at call time and the router moves on. With no keys at all, a call returns a "Missing credentials" error.
 
